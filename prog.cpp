@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <string.h>
 #include <cmath>
+#include <sys/stat.h>
 
 typedef struct header
 {
@@ -121,9 +122,6 @@ int main(int argc, char *argv[])
 		  return 0;
 	      }
 	  } // if(argc>3)
-	
-	if(argc != 5)
-	  std::string name = "sound2.wav";
         
 	std::string operation_type = argv[2];
 		
@@ -131,7 +129,6 @@ int main(int argc, char *argv[])
 	int fheader_size=sizeof(fheader);
 
 	FILE *file;	
-	FILE *info = fopen("../tmp/info.dat", "wb+");
 
 	if((file=fopen(argv[1], "rb")) == NULL)
 	  {
@@ -148,46 +145,23 @@ int main(int argc, char *argv[])
 	// Header display
 
 	std::cout<<">>> Header information in file "<<argv[1]<<": <<<\n\n";
-	
-	printf("RIFF: \t\t\t");
-	fprintf(info, "RIFF: \t\t\t");
-        
+
+	printf("RIFF: %.4s", fheader.riff);
 	printf("%.4s", fheader.riff);
-	fprintf(info ,"%.4s", fheader.riff);
-		
 	printf("\nFile type: \t\t");
-	fprintf(info, "\nFile type: \t\t");
-		
 	printf("%.4s", fheader.file_type);
-	fprintf(info, "%.4s", fheader.file_type);
-		
 	printf("\nFormat chunk: \t\t");
-	fprintf(info, "\nFormat chunk: \t\t");
-        
 	printf("%.4s", fheader.format_chunk);
-	fprintf(info, "%.4s", fheader.format_chunk);
 	printf("\nData: \t\t\t");
-	fprintf(info, "\nData: \t\t\t");
-	
 	printf("%.4s", fheader.data);
-	fprintf(info,"%.4s", fheader.data);
-	
 	printf("\n");
-	fprintf(info, "\n");
-	
 	printf("Frequency: \t\t%i Hz\n", fheader.samples_per_second);
 	printf("Bits per second: \t%i\n", fheader.bits_per_second);
 	printf("Number of channels: \t%i\n", fheader.channel_number);
 	printf("Chunk size: \t\t%i\n", fheader.chunk_size);
 	printf("Data length: \t\t%i KB\n", fheader.data_length/1024);
-	fprintf(info, "Frequency: \t\t%i Hz\n", fheader.samples_per_second);
-	fprintf(info, "Bits per second: \t%i\n", fheader.bits_per_second);
-	fprintf(info, "Number of channels: \t%i\n", fheader.channel_number);
-	fprintf(info, "Chunk size: \t\t%i\n", fheader.chunk_size);
-	fprintf(info, "Data length: \t\t%i KB\n", fheader.data_length/1024);
 	
 	long sample_size = (fheader.channel_number * fheader.bits_per_sample)/8;
-	fclose(info);
 	
 	if(fheader.format_type == 1)
 	  {
@@ -199,7 +173,11 @@ int main(int argc, char *argv[])
 	    
 	    
 	    FILE *ofile;
-	    ofile = fopen("output.wav", "wb");
+	    if(argc == 5)
+	      ofile = fopen(argv[4], "wb");
+	    else
+	      ofile = fopen("sound2.wav", "wb");
+	    
 	    fwrite(&fheader, sizeof(fheader), 1, ofile);
 	    
 	    if (size_is_correct)
