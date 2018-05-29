@@ -5,6 +5,9 @@
 #include <sys/stat.h>
 #include <gmp.h>
 #include <gmpxx.h>
+#include <string>
+#include <sstream>
+#include <fstream>
 
 typedef struct header
 {
@@ -193,11 +196,29 @@ int main(int argc, char *argv[])
 		
 		
 	      
-		// RSA algorithm: 
+		// RSA algorithm:
+
+		std::ifstream myfile("primes.txt");
+
+		long long int px, qx;
+		myfile >> px;
+		myfile >> qx;
+
+		
 		std::cout<<"\n>>> RSA algorithm: <<<\n\n";
 		mpz_t p, q;
+		mpz_init(p);
+		mpz_init(q);
+		/*
 		mpz_init_set_str(p, "117116115114112111", 10);
 	        mpz_init_set_str(q, "161111111111111111", 10);
+		*/
+
+		mpz_set_ui(p, px);
+		mpz_set_ui(q, qx);
+
+		
+		
 		std::cout<<"p = "<<p<<"\nq = "<<q<<"\n";
 		mpz_t n;
 		mpz_init(n);
