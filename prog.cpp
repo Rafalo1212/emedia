@@ -3,6 +3,8 @@
 #include <string.h>
 #include <cmath>
 #include <sys/stat.h>
+#include <gmp.h>
+#include <gmpxx.h>
 
 typedef struct header
 {
@@ -21,17 +23,19 @@ typedef struct header
   int data_length;
 }hdr;
 
-int hcf(long long int a,long long int b) // Highest common factor of a and b
+int hcf(mpz_t a,mpz_t b, mpz_t &hcf_int) // Highest common factor of a and b
 {
-  int t;
-
+  mpz_t t;
+  mpz_init(t);
+  
+  
   while(b != 0)
   {
-    t = b;
-    b = a % b;
-    a = t;
+    mpz_set(t, b);
+    mpz_mod(b, a, b);
+    mpz_set(a, t);
   };
-  return a;
+  mpz_set(hcf_int, a);
 }
 
 
@@ -187,85 +191,146 @@ int main(int argc, char *argv[])
 		else
 		  std::cout<<"Operation type: decoding\n";
 		
-		int data = 0;
+		
 	      
 		// RSA algorithm: 
 		std::cout<<"\n>>> RSA algorithm: <<<\n\n";
-		int p = 46457;
-		int q = 46133;
-		unsigned long long int euler = (p-1) * (q-1);
-		unsigned long long int n = p * q;
-		int e = 2;
-		while (hcf(euler, e)!=1 && e < n)
-		  {
-		    e++;
-		  }
-		long long int d = 2;
-		
-		int a,b,u,w,x,z,qq;
-		a=e;
-		b=euler;
-	      
-		u = 1; w = a;
-		x = 0; z = b;
+		mpz_t p, q;
+		mpz_init_set_str(p, "117116115114112111", 10);
+	        mpz_init_set_str(q, "161111111111111111", 10);
+		std::cout<<"p = "<<p<<"\nq = "<<q<<"\n";
+		mpz_t n;
+		mpz_init(n);
+		mpz_mul (n, p, q);
+		 mpz_sub_ui(p, p, 1);
+		 mpz_sub_ui(q, q, 1);
+		mpz_t euler;
+	        mpz_init (euler);
+		mpz_mul (euler, p, q);
 
-		// Calculating reverse modulo (d)
-		while(w)
+		 mpz_clear(p);
+		 mpz_clear(q);
+
+		 mpz_t n_minus_one;
+		 mpz_init(n_minus_one);
+		 mpz_sub_ui(n_minus_one, n, 1);
+		 
+		mpz_t e;
+		mpz_init(e);
+		mpz_set (e, n_minus_one);
+
+		mpz_t hcf_int;
+		mpz_init(hcf_int);
+
+		mpz_t gcd_help;
+		mpz_init(gcd_help);
+		
+
+        	while (true)
 		  {
-		    if(w < z)
-		      {
-			qq = u; u = x; x = qq;
-			qq = w; w = z; z = qq;
+		    mpz_gcd(gcd_help, euler, e);
+		    if(mpz_cmp_d(gcd_help, 1) == 0)
+		      {	
+			break;
 		      }
-		    qq = w / z;
-		    u -= qq * x;
-		    w -= qq * z;
-		  }
-		if(z == 1)
-		  {
-		    if(x < 0) x += b;
-		    d=x;
-		  }
-		else
-		  {
-		    std::cout<<"Error: couldn't find reversed modulo\n\n";
-		    return 0;
-		  }
-	      
-		printf("p = %i\nq = %i\neuler = %lli\nn = %lli\ne = %i\nd = %lli\n", p, q, euler, n, e, d);
-	      
-		//  Reading data:
+		    else
+		      mpz_sub_ui(e, e, 1);
+		   }
 		
+		mpz_t d;
+		mpz_init(d);
 
-		long long int op_int;
+		
+		mpz_invert(d, e, euler);
+
+		std::cout<<"\nphi = "<<euler<<"\n";
+
+										     
+									std::cout<<"\nPublic key (e, n):\n("<<e<<" , "<<n<<")\n";
+															   std::cout<<"\nSecret key (d,n):\n("<<d<<" , "<<n<<")\n";
+		//  Reading data
+
+	        	       
+	        mpz_t op_int;
+		mpz_init(op_int);
+					
 		if(operation_type == stre)
-		  op_int = e;
+		  {
+		    mpz_set(op_int, e);
+		    std::cout<<"\nEncoding file...\n";
+		  }
 		else if(operation_type == strd)
-		  op_int = d;
+		  {
+		    mpz_set(op_int, d);
+		    std::cout<<"\nDecoding file...\n";
+		  }
 		else
 		  {
 		    std::cout<<"Error: wrong operation type\n\n";
 		    return 0;
 		  }
+
+	       	    
+		int data;
+	        mpz_t helper;
+	        mpz_init(helper);
 		
-		for (i = 1; i <= num_samples; i++)
+        		        
+		
+		if(operation_type == stre)
 		  {
-		    read = fread(&data, sizeof(data), 1, file);
-		    
-		    
-		    if(data<0)
+		    for (i = 1; i <= num_samples; i++)
 		      {
-			data*=-1;
-			data=modulo(data,op_int,n);
-			data*=-1;
-		      }
-		    else
-		      data=modulo(data,op_int,n);
+
+		    
+			read = fread(&data, sizeof(data), 1, file);
+
+			if(data<0)
+			  {
+			    data *= -1;
+			    mpz_set_si(helper, data);
+			    mpz_powm(helper, helper, op_int, n);
+			    mpz_mul_si(helper, helper, -1);
+			  }
+			else
+			  {
+			    mpz_set_si(helper, data);
+			    mpz_powm(helper, helper, op_int, n);
+			  }
 		    
 		    // Writing data:
+		  
+
+			mpz_out_raw(ofile, helper);
+			
+		      } // for(i = 1...
+		  }// if(operation...
+		
+		else if(operation_type == strd)
+		  {
+		    for (i = 1; i <= num_samples; i++)
+		         {
+			   mpz_inp_raw(helper, file);
+
+		      if(mpz_sgn(helper) == -1)
+		      {
+		        mpz_mul_si(helper, helper, -1);
+		        mpz_powm(helper, helper, op_int, n);
+			data = mpz_get_ui(helper);
+		        data *= -1;
+		      }
+		    else
+		      {
+			mpz_powm(helper, helper, op_int, n);
+			data = mpz_get_ui(helper);
+		      }
 		    
+		    // Writing data:
+		      
 		    fwrite(&data, sizeof(data), 1, ofile);
-		  } // for(i = 1...
+		    
+		      } // for(i = 1...
+		  } // if(operation...
 	      } // if(size_is_correct)
 	  } // if(fheader.format_type == 1)
 		if(operation_type == "-encode")
