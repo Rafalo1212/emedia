@@ -26,49 +26,9 @@ typedef struct header
   int data_length;
 }hdr;
 
-int hcf(mpz_t a,mpz_t b, mpz_t &hcf_int) // Highest common factor of a and b
-{
-  mpz_t t;
-  mpz_init(t);
-  
-  
-  while(b != 0)
-  {
-    mpz_set(t, b);
-    mpz_mod(b, a, b);
-    mpz_set(a, t);
-  };
-  mpz_set(hcf_int, a);
-}
 
 
-int modulo(unsigned long long a, unsigned long long b, unsigned long long c) { // Calculate (a^b)%c without calculating a^b
-	unsigned long long n, *pows, *indexes, indexCounter = 0, searchBit = 1, partialMul = 1;
-	n = floor(log2(b)) + 1;
-	pows = new unsigned long long[n];
-	indexes = new unsigned long long[n];
-	pows[0] = a % c;
-	for (int i = 1; i < n; i++) {
-		pows[i] = (pows[i - 1] * pows[i - 1]) % c;
-	}
 
-
-	for (int i = 0; i < n; i++) {
-		int index = b & searchBit;
-		if (index != 0) {
-			indexes[indexCounter] = floor(log2(index));
-			indexCounter++;
-		}
-		searchBit = searchBit << 1;
-	}
-
-	for (int i = 0; i < indexCounter; i++) {
-		partialMul = (partialMul * pows[indexes[i]]) % c;
-	}
-	delete pows;
-	delete indexes;
-	return partialMul % c;
-}
 
 int main(int argc, char *argv[])
 {
