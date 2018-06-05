@@ -9,6 +9,8 @@
 #include <sstream>
 #include <fstream>
 
+
+// Struktura zawierajaca informacje o headerze pliku WAV
 typedef struct header
 {
   char riff[4];
@@ -29,12 +31,10 @@ typedef struct header
 
 
 
-
+// Glowna funkcja programu
 int main(int argc, char *argv[])
-{
-
-  //    Handling arguments  
-  
+{  
+  // Obsluga argumentow
 	int read = 0;
 	std::string stre = "-encode";
 	std::string strd = "-decode";
@@ -103,13 +103,13 @@ int main(int argc, char *argv[])
 	    return 0;
 	  }
 
-	// Header reading
+	// Odczytywanie headera z pliku WAV
 	
 	read = fread(&fheader, fheader_size, 1, file);
 	int file_length=sizeof(file);
 
 
-	// Header display
+	// Wyswietlanie informacji o headerze
 
 	std::cout<<">>> Header information in file "<<argv[1]<<": <<<\n\n";
 
@@ -132,9 +132,9 @@ int main(int argc, char *argv[])
 	
 	if(fheader.format_type == 1)
 	  {
+	    
 	    long i = 0;
 	    char data_buffer[sample_size];
-	    int  size_is_correct = 1;
 	    long bytes_in_each_channel = (sample_size / fheader.channel_number);
 	    long num_samples = (8 * fheader.data_length) / (fheader.channel_number * fheader.bits_per_sample);
 	    
@@ -147,38 +147,34 @@ int main(int argc, char *argv[])
 	    
 	    fwrite(&fheader, sizeof(fheader), 1, ofile);
 	    
-	    if (size_is_correct)
-	      { 
-		if(operation_type == "-encode")
+	   	if(operation_type == "-encode")
 		  std::cout<<"Operation type: encoding\n";
 		else
 		  std::cout<<"Operation type: decoding\n";
 		
 		
 	      
-		// RSA algorithm:
+		// Algorytm RSA
 
+		// Wczytanie wygenerowanych liczb pierwszych z pliku
 		std::ifstream myfile("primes.txt");
 
+		// Zapisanie tych liczb do zmiennych px i qx
 		long long int px, qx;
 		myfile >> px;
 		myfile >> qx;
 
-		
+                // Zainicjowanie liczb pierwszych do zmiennych typu mpz_t
 		std::cout<<"\n>>> RSA algorithm: <<<\n\n";
 		mpz_t p, q;
 		mpz_init(p);
 		mpz_init(q);
-		/*
-		mpz_init_set_str(p, "117116115114112111", 10);
-	        mpz_init_set_str(q, "161111111111111111", 10);
-		*/
 
 		mpz_set_ui(p, px);
 		mpz_set_ui(q, qx);
 
 		
-		
+		// Obliczanie wartosci potrzebnych do poprawnego szyfrowania
 		std::cout<<"p = "<<p<<"\nq = "<<q<<"\n";
 		mpz_t n;
 		mpz_init(n);
@@ -205,12 +201,13 @@ int main(int argc, char *argv[])
 
 		mpz_t gcd_help;
 		mpz_init(gcd_help);
-		
 
+		
+		// Obliczanie liczby wzglednie pierwszej przy pomocy funkcji gcd - najwieszky wspolny dzielnik
         	while (true)
 		  {
 		    mpz_gcd(gcd_help, euler, e);
-		    if(mpz_cmp_d(gcd_help, 1) == 0)
+		    if(mpz_cmp_d(gcd_help, 1) == 0) // jesli najwiekszy wspolny dzielnik dwoch liczb wynosi 1 to sa wzglednie pierwsze
 		      {	
 			break;
 		      }
@@ -222,27 +219,26 @@ int main(int argc, char *argv[])
 		mpz_init(d);
 
 		
-		mpz_invert(d, e, euler);
+		mpz_invert(d, e, euler); // obliczanie odwrotnosci modulo
 
 		std::cout<<"\nphi = "<<euler<<"\n";
 
 										     
-									std::cout<<"\nPublic key (e, n):\n("<<e<<" , "<<n<<")\n";
-															   std::cout<<"\nSecret key (d,n):\n("<<d<<" , "<<n<<")\n";
-		//  Reading data
-
+	        std::cout<<"\nPublic key (e, n):\n("<<e<<" , "<<n<<")\n";
+	        std::cout<<"\nSecret key (d,n):\n("<<d<<" , "<<n<<")\n";
+		// Odczytywanie danych
 	        	       
 	        mpz_t op_int;
 		mpz_init(op_int);
 					
 		if(operation_type == stre)
 		  {
-		    mpz_set(op_int, e);
+		    mpz_set(op_int, e);    // gdy szyfrowanie, to op_int jest liczba 'e'
 		    std::cout<<"\nEncoding file...\n";
 		  }
 		else if(operation_type == strd)
 		  {
-		    mpz_set(op_int, d);
+		    mpz_set(op_int, d);    // gdy deszyfrowanie, to op_int jest liczba 'd'
 		    std::cout<<"\nDecoding file...\n";
 		  }
 		else
@@ -257,8 +253,9 @@ int main(int argc, char *argv[])
 	        mpz_init(helper);
 		
         		        
+		// Obsluga pliku wejsciowego WAV
 		
-		if(operation_type == stre)
+		if(operation_type == stre) // stre - warunek wykonania szyfrowania pliku
 		  {
 		    for (i = 1; i <= num_samples; i++)
 		      {
@@ -266,7 +263,7 @@ int main(int argc, char *argv[])
 		    
 			read = fread(&data, sizeof(data), 1, file);
 
-			if(data<0)
+			if(data<0) // obsluga ujemnych liczb
 			  {
 			    data *= -1;
 			    mpz_set_si(helper, data);
@@ -279,7 +276,7 @@ int main(int argc, char *argv[])
 			    mpz_powm(helper, helper, op_int, n);
 			  }
 		    
-		    // Writing data:
+		    // Zapisywanie danych do pliku
 		  
 
 			mpz_out_raw(ofile, helper);
@@ -287,32 +284,31 @@ int main(int argc, char *argv[])
 		      } // for(i = 1...
 		  }// if(operation...
 		
-		else if(operation_type == strd)
+		else if(operation_type == strd) // strd - warunek wykonania deszyfrowania pliku
 		  {
 		    for (i = 1; i <= num_samples; i++)
 		         {
 			   mpz_inp_raw(helper, file);
 
-		      if(mpz_sgn(helper) == -1)
-		      {
-		        mpz_mul_si(helper, helper, -1);
-		        mpz_powm(helper, helper, op_int, n);
-			data = mpz_get_ui(helper);
-		        data *= -1;
-		      }
-		    else
-		      {
-			mpz_powm(helper, helper, op_int, n);
-			data = mpz_get_ui(helper);
-		      }
+			   if(mpz_sgn(helper) == -1) // obsluga ujemnych liczb
+			     {
+			       mpz_mul_si(helper, helper, -1);
+			       mpz_powm(helper, helper, op_int, n);
+			       data = mpz_get_ui(helper);
+			       data *= -1;
+			     }
+			   else
+			     {
+			       mpz_powm(helper, helper, op_int, n);
+			       data = mpz_get_ui(helper);
+			     }
 		    
-		    // Writing data:
+		    // Zapisywanie danych do pliku
 		      
 		    fwrite(&data, sizeof(data), 1, ofile);
 		    
 		      } // for(i = 1...
 		  } // if(operation...
-	      } // if(size_is_correct)
 	  } // if(fheader.format_type == 1)
 		if(operation_type == "-encode")
 		  std::cout<<"\n>>> Successfully encoded <<<\n";
